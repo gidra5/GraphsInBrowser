@@ -1,8 +1,8 @@
 const diameter = 40;
-const arrowSharpness = 30; //correctionAngle at the arrow's head in degrees
-const arrowLength = diameter/5;
-const minDist = diameter * 0.75 ;
-const fraction = 0.2;
+const arrowSharpness = 30; //angle at the arrow's head in degrees
+const arrowLength = diameter/6;
+const minDist = diameter  ;
+const fraction = 0.005;
 const offsetAmount = 10;
 
 window.graph = (verticies, edges, directed = true) => {
@@ -14,28 +14,30 @@ window.graph = (verticies, edges, directed = true) => {
         //all but edge's verticies in graph
 
         //Returns nothing if no vertex is intersected as given
-        //else returns vertex being intersected
+        //else returns vertex that closest to the point1 and being intersected
 
         const {i, j} = edge;
-        const values = verticies.values();
-        let currVertex;
-        let dist = -1; //invalid value in case no dist was computed
+        let closestVertex;
 
-        do {
-            currVertex = values.next();
-            
-            if(!currVertex.value || currVertex.value === verticies[i] || currVertex.value === verticies[j])
+        for (const vertex of verticies) {
+            if(vertex === verticies[i] || vertex === verticies[j])
                 continue;
             
-            const a = p5.Vector.sub(currVertex.value, point2);
-            const b = p5.Vector.sub(currVertex.value, point1);
-            const c = p5.Vector.sub(point1, point2).normalize();
-            dist = (a.dot(c) < 0) ? a.mag() :
-                   (b.dot(c) > 0) ? b.mag() :
-                   abs(c.y * b.x - c.x * b.y);
-        } while(!currVertex.done && (dist === -1 || (dist > minDist)))
+            const a = p5.Vector.sub(vertex, point2);
+            const b = p5.Vector.sub(vertex, point1);
+            const c = p5.Vector.sub(point2, point1).normalize();
+            const dist = (a.dot(c) > 0) ? a.mag() :
+                         (b.dot(c) < 0) ? b.mag() :
+                         abs(c.y * b.x - c.x * b.y);
+            if (dist > minDist) continue;
 
-        return currVertex.value;
+            if (!closestVertex) closestVertex = {vertex, dist: b.mag()};
+
+            if (b.mag() < closestVertex.dist) closestVertex = {vertex, dist: b.mag()};
+        }
+
+        if (closestVertex)
+            return closestVertex.vertex;
     }   
 
     const constructArrow = (edge) => {
@@ -53,11 +55,9 @@ window.graph = (verticies, edges, directed = true) => {
                 offset = createVector(vec.y, -vec.x).mult(offsetAmount);
             }
 
-            console.log(points, edge);
-
             while (blockingVertex) {
                 const point = p5.Vector.lerp(points[points.length - 1], verticies[j], fraction).add(offset);
-                
+
                 const c = p5.Vector.sub(point, points[points.length - 1]).normalize();
                 const b = p5.Vector.sub(blockingVertex, points[points.length - 1]);
                 const angle = Math.asin((c.y * b.x - c.x * b.y)/b.mag()); 
@@ -69,7 +69,7 @@ window.graph = (verticies, edges, directed = true) => {
 
                 points.push(point);
 
-                blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, minDist)
+                blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, minDist);
             }
             if(points.length < 2) 
                 points.push(p5.Vector.lerp(points[points.length - 1], verticies[j], 0.5).add(offset));

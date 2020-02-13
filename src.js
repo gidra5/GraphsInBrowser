@@ -13,16 +13,6 @@ const figureTypes = {
 
 function setup() {
   screenPos = createVector(0, 0);
-  
-  const triangle = [createVector(0, -150),
-                    createVector(-150,150),
-                    createVector(150,150)];
-
-    for (let i = 1; i <= 3; ++i) {
-      triangle.push(p5.Vector.lerp(triangle[0], triangle[1], i/4));
-      triangle.push(p5.Vector.lerp(triangle[1], triangle[2], i/4));
-      triangle.push(p5.Vector.lerp(triangle[2], triangle[0], i/4));
-    }
 
   myGraph = generateGraph('9525'); 
 
@@ -99,9 +89,9 @@ function createGraph(verticiesN, figureType, matrix) {
       remainingVerticies = verticiesN % 3;
       verticiesPerSide = (verticiesN - remainingVerticies) / 3;
 
-      verticies.push(createVector( 0              ,-13 * verticiesN),
-                     createVector(-13 * verticiesN, 13 * verticiesN),
-                     createVector( 13 * verticiesN, 13 * verticiesN));
+      verticies.push(createVector( 0                        ,-diameter / 2 * verticiesN),
+                     createVector(-diameter / 2 * verticiesN, diameter / 2 * verticiesN),
+                     createVector( diameter / 2 * verticiesN, diameter / 2 * verticiesN));
 
       for(let i = 0; i < 3; ++i) {
         const N = verticiesPerSide + (--remainingVerticies >= 0 ? 1 : 0);
@@ -117,10 +107,10 @@ function createGraph(verticiesN, figureType, matrix) {
       remainingVerticies = verticiesN % 4;
       verticiesPerSide = (verticiesN - remainingVerticies) / 4;
 
-      verticies.push(createVector( 13 * verticiesN, 13 * verticiesN),
-                     createVector(-13 * verticiesN, 13 * verticiesN),
-                     createVector(-13 * verticiesN,-13 * verticiesN),
-                     createVector( 13 * verticiesN,-13 * verticiesN));
+      verticies.push(createVector( diameter / 2 * verticiesN, diameter / 2 * verticiesN),
+                     createVector(-diameter / 2 * verticiesN, diameter / 2 * verticiesN),
+                     createVector(-diameter / 2 * verticiesN,-diameter / 2 * verticiesN),
+                     createVector( diameter / 2 * verticiesN,-diameter / 2 * verticiesN));
 
       for(let i = 0; i < 4; ++i) {
         const N = verticiesPerSide + (--remainingVerticies >= 0 ? 1 : 0);
