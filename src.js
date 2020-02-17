@@ -26,8 +26,8 @@ function setup() {
 let x = 50;
 
 function draw() {
-  translate(windowWidth/2, windowHeight/2); //to scale relative
-  scale(scaling);                           //to the center of window
+  translate(windowWidth/2, windowHeight/2); //to scale relative to the center of window
+  scale(scaling);                           
 
   translate(screenPos.x, screenPos.y);   
   background(110);
@@ -58,11 +58,13 @@ function generateGraph(myNumber) {
     case 4: figureType = figureTypes.SQUARE_WITH_CENTER; break;
   }
 
+  randomSeed("seed");
+
   for (let i = 0; i < verticiesN; ++i) {
     const row = [];
 
     for (let j = 0; j < verticiesN; ++j) 
-      row.push( Math.floor( k * ( Math.random() + Math.random() ) ) );
+      row.push( Math.floor( k * ( random() + random() ) ) );
 
     matrix.push(row);
   }
@@ -79,7 +81,7 @@ function createGraph(verticiesN, figureType, matrix) {
         edges.push({i: n, j: m});     
   }
 
-  let verticiesPerSide = 0; //invalid value for the case of circle
+  let verticiesPerSide = 0; 
   let remainingVerticies = 0;
   let circleRadius = 0;
   const verticies = [];
@@ -124,14 +126,14 @@ function createGraph(verticiesN, figureType, matrix) {
       verticies.push(createVector(0, 0));
     case figureTypes.CIRCLE : 
       circleRadius = 0;
+
+      //TODO: evaluate suitable radius
       
       for (let i = 0; i < verticiesN; ++i) 
         vertex = createVector(circleRadius, 0).rotate(Math.PI * 2 * i / verticiesN);
     
       break;
   }
-
-  console.log(verticies);
 
   return graph(verticies, edges);
 }

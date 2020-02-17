@@ -1,12 +1,13 @@
 const diameter = 40;
 const arrowSharpness = 30; //angle at the arrow's head in degrees
 const arrowLength = diameter/6;
-const minDist = diameter  ;
-const fraction = 0.005;
+const minDist = diameter;
+const fraction = 0.5;
 const offsetAmount = 10;
 
 window.graph = (verticies, edges, directed = true) => {
     const arrows = [];
+    const arrowVertex_offset = [];
 
     const isIntersecting = (point1, point2, edge, minDist) => {
         //Function that checks if given section of line 
@@ -47,32 +48,43 @@ window.graph = (verticies, edges, directed = true) => {
         points.push(verticies[i]);
 
         if (i !== j) {
+            const inc = 5;
             let blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, minDist);
-            let offset = createVector(0, 0);
-
-            if(edges.find(({i, j}) => i === edge.j && j === edge.i)) {
-                const vec = p5.Vector.sub(points[points.length - 1], verticies[j]).normalize();
-                offset = createVector(vec.y, -vec.x).mult(offsetAmount);
-            }
+            let blockingIndex = verticies.indexOf(blockingVertex);
+            if (blockingVertex) arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] ? 
+                                arrowVertex_offset[blockingIndex] + inc : .01;
 
             while (blockingVertex) {
-                const point = p5.Vector.lerp(points[points.length - 1], verticies[j], fraction).add(offset);
+                const dist = minDist + arrowVertex_offset[blockingIndex];
+                const point = p5.Vector.lerp(points[points.length - 1], verticies[j], fraction);
 
                 const c = p5.Vector.sub(point, points[points.length - 1]).normalize();
                 const b = p5.Vector.sub(blockingVertex, points[points.length - 1]);
                 const angle = Math.asin((c.y * b.x - c.x * b.y)/b.mag()); 
                 let angleSign = Math.sign(angle); if(!angleSign) angleSign = 1;
                 
-                const correctionAngle = angleSign * Math.asin(minDist / b.mag()) - angle;
+                const correctionAngle = angleSign * Math.asin( dist / b.mag()) - angle;
 
-                point.sub(points[points.length - 1]).rotate(correctionAngle).add(points[points.length - 1]);
+                point.sub(points[points.length - 1])
+                     .rotate(correctionAngle)
+                     .add(points[points.length - 1]);
 
                 points.push(point);
 
-                blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, minDist);
+                blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, dist);
+                if (blockingIndex !== verticies.indexOf(blockingVertex)) {
+                    blockingIndex   = verticies.indexOf(blockingVertex);
+
+                    arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] ? 
+                    arrowVertex_offset[blockingIndex] + inc : .01;
+                }
             }
-            if(points.length < 2) 
-                points.push(p5.Vector.lerp(points[points.length - 1], verticies[j], 0.5).add(offset));
+            if (points.length < 2 && edges.find(({i, j}) => i === edge.j && j === edge.i)) {
+                const vec = p5.Vector.sub(points[points.length - 1], verticies[j]).normalize();
+
+                points.push(p5.Vector.lerp(points[points.length - 1], verticies[j], 0.5)
+                                     .add(createVector(vec.y, -vec.x).mult(offsetAmount)));
+            }
         } else {
             const vec1 = verticies[i].copy().add(createVector(minDist, 0).rotate( Math.PI / 6));
             const vec2 = verticies[i].copy().add(createVector(minDist, 0).rotate(-Math.PI / 6));
@@ -86,11 +98,11 @@ window.graph = (verticies, edges, directed = true) => {
         return points;
     };
 
-    for (const {i, j} of edges) {
+    for (const edge of edges) {
         let vec;
         let arrow = [];
         
-        arrow = constructArrow({i, j});    
+        arrow = constructArrow(edge);    
         
         //shift begining and ending of the arrow to the edge of the verticies
 
@@ -106,6 +118,7 @@ window.graph = (verticies, edges, directed = true) => {
     const drawArrow = (arrow) => {
         lastIndex = arrow.length - 1;
 
+        strokeWeight(1);
         for (let i = 0; i < lastIndex; ++i) {
             line(arrow[i].x, arrow[i].y,
                  arrow[i + 1].x, arrow[i + 1].y);
