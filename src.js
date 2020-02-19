@@ -1,6 +1,7 @@
 let scaling = 1;
 let screenPos;
 const sensativity = 0.1;
+const directed = false;
 let myGraph;
 
 const figureTypes = {
@@ -47,6 +48,7 @@ function generateGraph(myNumber) {
   let figureType;
   const k = 1.0 - Number(myNumber.charAt(2)) * 0.02 - Number(myNumber.charAt(3)) * 0.005 - 0.25;
   const matrix = [];
+  const symmetricMatrix = [];
 
   switch (Math.floor(Number(myNumber.charAt(3)/2))) {
     case 0: figureType = figureTypes.CIRCLE; break;
@@ -67,18 +69,39 @@ function generateGraph(myNumber) {
     matrix.push(row);
   }
 
-  console.log(matrix);
+  for (let i = 0; i < verticiesN; ++i) {
+    const row = [];
 
-  return createGraph(verticiesN, figureType, matrix);
+    for (let j = 0; j < verticiesN; ++j) 
+      row.push(Math.min(matrix[i][j] + matrix[j][i], 1));
+
+    symmetricMatrix.push(row);
+  }
+
+  console.log(matrix);
+  console.log(symmetricMatrix);
+
+  if (directed)
+    return createGraph(verticiesN, figureType, matrix, directed);
+  else
+    return createGraph(verticiesN, figureType, symmetricMatrix, directed);
 }
 
-function createGraph(verticiesN, figureType, matrix) {
+function createGraph(verticiesN, figureType, matrix, directed = true) {
   const edges = [];
 
-  for (let n = 0; n < verticiesN; ++n) {
-    for (let m = 0; m < verticiesN; ++m)
-      if (matrix[n][m] === 1)
-        edges.push({i: n, j: m});     
+  if (directed) {
+    for (let n = 0; n < verticiesN; ++n) {
+      for (let m = 0; m < verticiesN; ++m)
+        if (matrix[n][m] === 1)
+          edges.push({i: n, j: m});     
+    }
+  } else {
+    for (let n = 0; n < verticiesN; ++n) {
+      for (let m = 0; m < n + 1; ++m)
+        if (matrix[n][m] === 1)
+          edges.push({i: n, j: m});     
+    }
   }
 
   let verticiesPerSide = 0; 
@@ -135,5 +158,5 @@ function createGraph(verticiesN, figureType, matrix) {
       break;
   }
 
-  return graph(verticies, edges);
+  return graph(verticies, edges, directed);
 }
