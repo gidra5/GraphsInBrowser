@@ -23,8 +23,6 @@ function setup() {
   strokeWeight(diameter/20);
 }
 
-let x = 50;
-
 function draw() {
   translate(windowWidth/2, windowHeight/2); //to scale relative to the center of window
   scale(scaling);                           
@@ -68,6 +66,8 @@ function generateGraph(myNumber) {
 
     matrix.push(row);
   }
+
+  console.log(matrix);
 
   return createGraph(verticiesN, figureType, matrix);
 }
