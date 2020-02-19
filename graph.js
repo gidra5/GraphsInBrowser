@@ -6,7 +6,11 @@ const fraction = 0.5;
 const offsetAmount = 10;
 
 window.graph = (verticies, edges, directed = true) => {
+    //Array for arrows - arrays of points that arrow consist of
     const arrows = [];
+    const inc = 5; //inc - increment of distance
+    //Specific to the vertex offset so that if one arrow passed near vertex
+    //next arrow that will pass will be (inc) px further away than it was previously
     const arrowVertex_offset = [];
 
     const isIntersecting = (point1, point2, edge, minDist) => {
@@ -43,18 +47,24 @@ window.graph = (verticies, edges, directed = true) => {
 
     const constructArrow = (edge) => {
         const {i, j} = edge;
-        const points = [];
+        const points = []; //points that arrow will consist of
 
-        points.push(verticies[i]);
-
+        points.push(verticies[i]); 
+        
+        //if arrow doesn't point to itself search for a way to the end vertex
         if (i !== j) {
-            const inc = 5;
+            //check whether there is a vertex on the way
             let blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, minDist);
+            //get its index to increase offset before processing more
             let blockingIndex = verticies.indexOf(blockingVertex);
-            if (blockingVertex) arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] ? 
-                                arrowVertex_offset[blockingIndex] + inc : .01;
+            if (blockingVertex) 
+                arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + inc | .01;
 
             while (blockingVertex) {
+                //geometry stuff
+                //basically finds next point such that segment will be tangent and
+                //given distance away from the blocking vertex
+                //and checks again if there are still verticies that block arrow
                 const dist = minDist + arrowVertex_offset[blockingIndex];
                 const point = p5.Vector.lerp(points[points.length - 1], verticies[j], fraction);
 
@@ -68,31 +78,39 @@ window.graph = (verticies, edges, directed = true) => {
                 point.sub(points[points.length - 1])
                      .rotate(correctionAngle)
                      .add(points[points.length - 1]);
-
+                
+                //geometry stuff ends
                 points.push(point);
 
                 blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, dist);
+                //if still have blocking vertex that is different from previous
                 if (blockingIndex !== verticies.indexOf(blockingVertex)) {
+                    //we change index and increase offset for new vertex
                     blockingIndex   = verticies.indexOf(blockingVertex);
 
-                    arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] ? 
-                    arrowVertex_offset[blockingIndex] + inc : .01;
+                    arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + inc | .01;
                 }
             }
             if (points.length < 2 && edges.find(({i, j}) => i === edge.j && j === edge.i)) {
+                //if its straight line and we have arrow in the opposite direction
+                //then compute direction in which current arrow is facing
                 const vec = p5.Vector.sub(points[points.length - 1], verticies[j]).normalize();
 
+                //and move middle point of the resulting arrow offsetAmount away
+                //perpendicular to the direction in which it points
                 points.push(p5.Vector.lerp(points[points.length - 1], verticies[j], 0.5)
                                      .add(createVector(vec.y, -vec.x).mult(offsetAmount)));
             }
         } else {
+            //if arrow is pointing to itself, then just generate two points to make a loop
             const vec1 = verticies[i].copy().add(createVector(minDist, 0).rotate( Math.PI / 6));
             const vec2 = verticies[i].copy().add(createVector(minDist, 0).rotate(-Math.PI / 6));
          
             points.push(vec1);
             points.push(vec2);
         }
-
+        
+        //end of the arrow
         points.push(verticies[j]); 
 
         return points;
@@ -125,6 +143,7 @@ window.graph = (verticies, edges, directed = true) => {
         }
         
         if (directed) { 
+            //if graph is directed, then alse draw head for the arrow
             const p1 = p5.Vector.sub(arrow[lastIndex - 1], arrow[lastIndex])
                                 .normalize()
                                 .mult(arrowLength)
