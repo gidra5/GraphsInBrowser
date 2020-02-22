@@ -1,8 +1,11 @@
+const sensativity = 0.1;
+const directed = true;
+const labNumber = 5;
+const studentBook = '9525';
 let scaling = 1;
 let screenPos;
-const sensativity = 0.1;
-const directed = false;
 let myGraph;
+
 
 const figureTypes = {
   CIRCLE: 'circle',
@@ -15,7 +18,7 @@ const figureTypes = {
 function setup() {
   screenPos = createVector(0, 0);
 
-  myGraph = generateGraph('9525'); 
+  myGraph = generateGraph(studentBook); 
 
   resizeCanvas(windowWidth, windowHeight);
 
@@ -46,9 +49,26 @@ function mouseDragged() {
 function generateGraph(myNumber) {
   const verticiesN = 10 + Number(myNumber.charAt(2));
   let figureType;
-  const k = 1.0 - Number(myNumber.charAt(2)) * 0.02 - Number(myNumber.charAt(3)) * 0.005 - 0.25;
-  const matrix = [];
-  const symmetricMatrix = [];
+  let k;
+
+  switch (labNumber) {
+    case 1: 
+      k = 1.0 - myNumber.charAt(2) * 0.02 - myNumber.charAt(3) * 0.005 - 0.25;
+      break;
+    case 2:  
+      k = 1.0 - myNumber.charAt(2) * 0.01 - myNumber.charAt(3) * 0.01 - 0.3;
+      break;
+    case 3:  
+      k = 1.0 - myNumber.charAt(2) * 0.005 - myNumber.charAt(3) *0.005 - 0.27;
+      break;
+    case 4:  
+      k = 1.0 - myNumber.charAt(2)* 0.01 - myNumber.charAt(3) *0.005 - 0.15;
+      break;
+    case 5:  
+    case 6:
+      k = 1.0 - myNumber.charAt(3) * 0.01 - myNumber.charAt(4) *0.005 - 0.05;
+      break;
+  }
 
   switch (Math.floor(Number(myNumber.charAt(3)/2))) {
     case 0: figureType = figureTypes.CIRCLE; break;
@@ -60,15 +80,13 @@ function generateGraph(myNumber) {
 
   randomSeed("seed");
 
-  for (let i = 0; i < verticiesN; ++i) {
-    const row = [];
+  const matrix = Array.from({ length: verticiesN }, () =>
+    Array.from({ length: verticiesN }, () =>
+      Math.floor( k * ( random() + random() ) )
+    )
+  );
 
-    for (let j = 0; j < verticiesN; ++j) 
-      row.push( Math.floor( k * ( random() + random() ) ) );
-
-    matrix.push(row);
-  }
-
+  const symmetricMatrix = [];
   for (let i = 0; i < verticiesN; ++i) {
     const row = [];
 
@@ -87,7 +105,7 @@ function generateGraph(myNumber) {
     return createGraph(verticiesN, figureType, symmetricMatrix, directed);
 }
 
-function createGraph(verticiesN, figureType, matrix, directed = true) {
+function createGraph(verticiesN, figureType, matrix, directed) {
   const edges = [];
 
   if (directed) {
@@ -126,6 +144,7 @@ function createGraph(verticiesN, figureType, matrix, directed = true) {
 
       break;
     case figureTypes.SQUARE_WITH_CENTER :
+      const offset = 1;
       verticiesN--;
       verticies.push(createVector(0, 0));
     case figureTypes.SQUARE : 
@@ -140,7 +159,7 @@ function createGraph(verticiesN, figureType, matrix, directed = true) {
       for(let i = 0; i < 4; ++i) {
         const N = verticiesPerSide + (--remainingVerticies >= 0 ? 1 : 0);
         for (let j = 1; j < N; ++j) 
-          verticies.push(p5.Vector.lerp(verticies[i % 4], verticies[(i + 1)%4], j / N));
+          verticies.push(p5.Vector.lerp(verticies[i % 4 + offset | 0], verticies[(i + 1) % 4 + offset | 0], j / N));
       }
 
      break;
