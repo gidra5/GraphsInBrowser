@@ -6,12 +6,22 @@ const fraction = 0.5;
 const offsetAmount = 10;
 
 window.graph = (verticies, edges, directed = true) => {
-    //Array for arrows - arrays of points that arrow consist of
+    const inDegrees = [];
+    const outDegrees = [];
+
+    //Arrow - array of points that arrow consist of
     const arrows = [];
     const inc = 5; //inc - increment of distance
+
     //Specific to the vertex offset so that if one arrow passed near vertex
     //next arrow that will pass will be (inc) px further away than it was previously
     const arrowVertex_offset = [];
+
+    //calculating semipowers for verticies in graph
+    for (let i = 0; i < verticies.length; ++i) {
+        outDegrees[i] = edges.filter(item => item.i === i).length;
+        inDegrees[i] = edges.filter(item => item.j === i).length;
+    }
 
     const isIntersecting = (point1, point2, edge, minDist) => {
         //Function that checks if given section of line 
@@ -161,10 +171,9 @@ window.graph = (verticies, edges, directed = true) => {
     };
 
     return {
-        draw: () => {
+        draw() {
             push();                         //change of parameters like fill() will be discarded after pop()
                 angleMode(DEGREES);
-                noFill();
                 for (const arrow of arrows)
                     drawArrow(arrow);
             pop();
@@ -172,9 +181,19 @@ window.graph = (verticies, edges, directed = true) => {
             for (let i = 0; i < verticies.length; ++i) {
                 ellipse(verticies[i].x, verticies[i].y, diameter, diameter);
                 text(i, verticies[i].x, verticies[i].y);
+                const width = textWidth(i) + 2;
+                textSize(diameter/5); //a bit less than half smaller
+                textAlign(LEFT, CENTER);
+                if (directed) {
+                    text(outDegrees[i], verticies[i].x + width/2, verticies[i].y - 5);
+                    text(inDegrees[i], verticies[i].x + width/2, verticies[i].y + 4);
+                } else 
+                    text(outDegrees[i] + inDegrees[i], verticies[i].x + width/2, verticies[i].y - 5);
+                textSize(diameter/3);
+                textAlign(CENTER, CENTER);
             }
         },
-        getMatrix: () => {
+        getMatrix() {
             const matrix = [];
 
             for (let n = 0; n < verticies.length; ++n) {
@@ -186,6 +205,41 @@ window.graph = (verticies, edges, directed = true) => {
                 matrix.push(row);     
             }
             return matrix;
+        },
+        isRegular() {
+            //checks if this graph is regular
+            //and returns its degree
+            let degree = outDegrees[0] + inDegrees[0];
+
+            for (let i = 1; i < verticies.length; ++i) 
+                if (degree !== outDegrees[i] + inDegrees[i]) return 0;
+        },
+        getPendant() {
+            //returns array with indexes of pendant verticies
+            const pendant = [];
+
+            for (let i = 0; i < verticies.length; ++i) 
+                if (outDegrees[i] + inDegrees[i] === 1) pendant.push(i);
+            
+            return pendant;
+        },
+        getIsolated() {
+            //returns array with indexes of isolated verticies
+            const isolated = [];
+
+            for (let i = 0; i < verticies.length; ++i) 
+                if (outDegrees[i] + inDegrees[i] === 0) isolated.push(i);
+
+            return isolated;
+        },
+        getInDegrees() {
+            return inDegrees;
+        },
+        getOutDegrees() {
+            return outDegrees;
+        },
+        getDegrees() {
+            return Array.from({ length: verticies.length }, (v, i) => inDegrees[i] + outDegrees[i]);
         }
     };
 };

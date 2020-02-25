@@ -1,11 +1,11 @@
 const sensativity = 0.1;
-const directed = true;
-const labNumber = 5;
-const studentBook = '9525';
+let studentBook = '9525';
+let directed = false;
+let labNumber = 2;
 let scaling = 1;
 let screenPos;
 let myGraph;
-
+//let gui;
 
 const figureTypes = {
   CIRCLE: 'circle',
@@ -18,12 +18,39 @@ const figureTypes = {
 function setup() {
   screenPos = createVector(0, 0);
 
+  //gui = createGui('Options');
+
   myGraph = generateGraph(studentBook); 
+
+  if (myGraph.getPendant().length !== 0)
+    console.log("Pendant verticies: " + myGraph.getPendant());
+  else 
+    console.log("Pendant verticies: none");
+  if (myGraph.getIsolated() !== 0)
+    console.log("Isolated verticies: " + myGraph.getIsolated());
+  else
+    console.log("Isolated verticies: none");
+
+  console.log("Regular? " + !!myGraph.isRegular());
+  if (myGraph.isRegular())
+    console.log("Degree" + myGraph.isRegular());
+  
+  if (directed) {
+    console.group('Indegrees');
+    console.table(myGraph.getInDegrees());
+    console.groupEnd();
+    console.group('Outdegrees');
+    console.table(myGraph.getOutDegrees());
+    console.groupEnd();
+  }
+  console.group('Degrees');
+  console.table(myGraph.getDegrees());
+  console.groupEnd();
 
   resizeCanvas(windowWidth, windowHeight);
 
   textAlign(CENTER, CENTER);
-  textSize(diameter/2);
+  textSize(diameter/3);
   strokeWeight(diameter/20);
 }
 
