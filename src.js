@@ -1,11 +1,16 @@
-const sensativity = 0.1;
-let studentBook = '9525';
-let directed = false;
-let labNumber = 2;
+var sensativity = 0.1;
+
+var options = {
+  showCondensationGraph: false,
+  directed: true,
+  studentBook: '9525',
+  labNumber: [1, 2, 3, 4, 5, 6],
+};
+
 let scaling = 1;
 let screenPos;
 let myGraph;
-//let gui;
+let guiOptions, guiParameters;
 
 const figureTypes = {
   CIRCLE: 'circle',
@@ -18,39 +23,61 @@ const figureTypes = {
 function setup() {
   screenPos = createVector(0, 0);
 
-  //gui = createGui('Options');
+  guiOptions = createGui('Options');
+  sliderRange(0, 1, 0.001);
+  guiOptions.addGlobals('sensativity');
+  guiOptions.addObject(new Proxy(options, { set: (obj, prop, value) => {
+    obj[prop] = value;
+    if (options.studentBook.length === 4 && prop !== 'showCondensationGraph')
+      myGraph = generateGraph(options.studentBook, options.labNumber, options.directed); 
+  } }));
 
-  myGraph = generateGraph(studentBook); 
+  guiParameters = createGui('Graph Parameters');
+  guiParameters.addObject(new Proxy(parameters, { set: (obj, prop, value) => {
+    obj[prop] = value;
 
-  if (myGraph.getPendant().length !== 0)
-    console.log("Pendant verticies: " + myGraph.getPendant());
-  else 
-    console.log("Pendant verticies: none");
-  if (myGraph.getIsolated() !== 0)
-    console.log("Isolated verticies: " + myGraph.getIsolated());
-  else
-    console.log("Isolated verticies: none");
+    arrowLength = diameter * parameters.arrowThickness / 6;
+    minDist = diameter * parameters.minDist;
 
-  console.log("Regular? " + !!myGraph.isRegular());
-  if (myGraph.isRegular())
-    console.log("Degree" + myGraph.isRegular());
+    myGraph = generateGraph(options.studentBook, options.labNumber, options.directed); 
+  } }));
+
+  guiParameters.setPosition(20, height + 200);
+
+  console.log(myGraph.getMatrix());
+  console.log(myGraph.getMatrix2());
+  console.log(myGraph.getMatrix3());
+  // if (myGraph.getPendant().length !== 0)
+  //   console.log("Pendant verticies: " + myGraph.getPendant());
+  // else 
+  //   console.log("Pendant verticies: none");
+  // if (myGraph.getIsolated() !== 0)
+  //   console.log("Isolated verticies: " + myGraph.getIsolated());
+  // else
+  //   console.log("Isolated verticies: none");
+
+  // if (myGraph.isRegular())
+  //   console.log("Graph is regular\nDegree" + myGraph.isRegular());
+  // else
+  //   console.log('Graph is irregular');  
   
-  if (directed) {
-    console.group('Indegrees');
-    console.table(myGraph.getInDegrees());
-    console.groupEnd();
-    console.group('Outdegrees');
-    console.table(myGraph.getOutDegrees());
-    console.groupEnd();
-  }
-  console.group('Degrees');
-  console.table(myGraph.getDegrees());
-  console.groupEnd();
+  // if (options.directed) {
+  //   console.group('Indegrees');
+  //   console.table(myGraph.getInDegrees());
+  //   console.groupEnd();
+  //   console.group('Outdegrees');
+  //   console.table(myGraph.getOutDegrees());
+  //   console.groupEnd();
+  // }
+  // console.group('Degrees');
+  // console.table(myGraph.getDegrees());
+  // console.groupEnd();
+
+
 
   resizeCanvas(windowWidth, windowHeight);
 
   textAlign(CENTER, CENTER);
-  textSize(diameter/3);
   strokeWeight(diameter/20);
 }
 
@@ -61,7 +88,10 @@ function draw() {
   translate(screenPos.x, screenPos.y);   
   background(110);
 
-  myGraph.draw();
+  if (options.showCondensationGraph)
+    myGraph.drawCondensated();
+  else
+    myGraph.draw();
 }
 
 function mouseWheel(event) {
@@ -73,31 +103,31 @@ function mouseDragged() {
   screenPos.y += movedY / scaling;
 }
 
-function generateGraph(myNumber) {
-  const verticiesN = 10 + Number(myNumber.charAt(2));
+function generateGraph(bookNumber, labNumber, directed) {
+  const verticiesN = 10 + Number(bookNumber.charAt(2));
   let figureType;
   let k;
 
   switch (labNumber) {
     case 1: 
-      k = 1.0 - myNumber.charAt(2) * 0.02 - myNumber.charAt(3) * 0.005 - 0.25;
+      k = 1.0 - bookNumber.charAt(2) * 0.02 - bookNumber.charAt(3) * 0.005 - 0.25;
       break;
     case 2:  
-      k = 1.0 - myNumber.charAt(2) * 0.01 - myNumber.charAt(3) * 0.01 - 0.3;
+      k = 1.0 - bookNumber.charAt(2) * 0.01 - bookNumber.charAt(3) * 0.01 - 0.3;
       break;
     case 3:  
-      k = 1.0 - myNumber.charAt(2) * 0.005 - myNumber.charAt(3) *0.005 - 0.27;
+      k = 1.0 - bookNumber.charAt(2) * 0.005 - bookNumber.charAt(3) *0.005 - 0.27;
       break;
     case 4:  
-      k = 1.0 - myNumber.charAt(2)* 0.01 - myNumber.charAt(3) *0.005 - 0.15;
+      k = 1.0 - bookNumber.charAt(2)* 0.01 - bookNumber.charAt(3) *0.005 - 0.15;
       break;
     case 5:  
     case 6:
-      k = 1.0 - myNumber.charAt(3) * 0.01 - myNumber.charAt(4) *0.005 - 0.05;
+      k = 1.0 - bookNumber.charAt(3) * 0.01 - bookNumber.charAt(4) *0.005 - 0.05;
       break;
   }
 
-  switch (Math.floor(Number(myNumber.charAt(3)/2))) {
+  switch (Math.floor(bookNumber.charAt(3)/2)) {
     case 0: figureType = figureTypes.CIRCLE; break;
     case 1: figureType = figureTypes.SQUARE; break;
     case 2: figureType = figureTypes.TRIANGLE; break;
@@ -105,7 +135,7 @@ function generateGraph(myNumber) {
     case 4: figureType = figureTypes.SQUARE_WITH_CENTER; break;
   }
 
-  randomSeed("seed");
+  randomSeed(Number(bookNumber));
 
   const matrix = Array.from({ length: verticiesN }, () =>
     Array.from({ length: verticiesN }, () =>
@@ -122,9 +152,6 @@ function generateGraph(myNumber) {
 
     symmetricMatrix.push(row);
   }
-
-  console.log(matrix);
-  console.log(symmetricMatrix);
 
   if (directed)
     return createGraph(verticiesN, figureType, matrix, directed);
@@ -171,7 +198,6 @@ function createGraph(verticiesN, figureType, matrix, directed) {
 
       break;
     case figureTypes.SQUARE_WITH_CENTER :
-      const offset = 1;
       verticiesN--;
       verticies.push(createVector(0, 0));
     case figureTypes.SQUARE : 
@@ -186,7 +212,7 @@ function createGraph(verticiesN, figureType, matrix, directed) {
       for(let i = 0; i < 4; ++i) {
         const N = verticiesPerSide + (--remainingVerticies >= 0 ? 1 : 0);
         for (let j = 1; j < N; ++j) 
-          verticies.push(p5.Vector.lerp(verticies[i % 4 + offset | 0], verticies[(i + 1) % 4 + offset | 0], j / N));
+          verticies.unshift(p5.Vector.lerp(verticies[i % 4], verticies[(i + 1) % 4], j / N));
       }
 
      break;

@@ -1,21 +1,120 @@
+var parameters = {
+    arrowThicknessStep: 0.1,
+    arrowThicknessMax: 1,
+    arrowThicknessMin: 0.1,
+    arrowThickness: 0.8,
+    fractionStep: 0.005,
+    fractionMax: 0.5,
+    fractionMin: 0.005,
+    fraction: 0.5,
+    distanceIncStep: 0.1,
+    distanceIncMax: 10,
+    distanceIncMin: 1,
+    distanceInc: 5, //distanceInc - increment of distance
+    minDistStep: 0.01,
+    minDistMax: 2,
+    minDistMin: 0.75,
+    minDist: 1,
+};
+
 const diameter = 40;
 const arrowSharpness = 30; //angle at the arrow's head in degrees
-const arrowLength = diameter/6;
-const minDist = diameter;
-const fraction = 0.5;
-const offsetAmount = 10;
+let arrowLength = diameter * parameters.arrowThickness / 6;
+const offsetAmount = diameter / 4;
+let minDist = diameter * parameters.minDist;
 
-window.graph = (verticies, edges, directed = true) => {
+window.graph = (verticies, edges, directed) => {
+
     const inDegrees = [];
     const outDegrees = [];
 
     //Arrow - array of points that arrow consist of
     const arrows = [];
-    const inc = 5; //inc - increment of distance
 
     //Specific to the vertex offset so that if one arrow passed near vertex
-    //next arrow that will pass will be (inc) px further away than it was previously
+    //next arrow that will pass will be (distanceInc) px further away than it was previously
     const arrowVertex_offset = [];
+
+    //matrix multiplication
+    const mult = (mat1, mat2) => {
+        const mat = new Array(mat1.length).fill(0).map(() => new Array(mat2[0].length).fill(0));
+
+        for (let i = 0; i < mat1.length; ++i) {
+            for (let j = 0; j < mat2.length; ++j) {
+                for (let k = 0; k < mat1[0].length; ++k)
+                    mat[i][j] += mat1[i][k] * mat2[k][j];
+            }
+        }
+
+        return mat;
+    }
+
+    //Adjacency matrix of this graph
+    const matrix = [];
+
+    for (let n = 0; n < verticies.length; ++n) {
+        const row = [];
+
+        for (let m = 0; m < verticies.length; ++m)
+             row[m] = edges.find( ({i, j}) => (i === n && j === m) || (!directed && i === m && j === n) ) ? 1 : 0;
+
+        matrix.push(row);     
+    }
+
+    let reachabilityMatrix = Array.from(matrix);
+
+    for (let  i = 0; i < verticies.length; ++i) 
+        reachabilityMatrix = mult(reachabilityMatrix, matrix)
+                            .map((value, index1) => value
+                            .map((value, index2) => min(value + (index1 === index2 ? 1 : 0), 1)));
+
+    const condensated = [[0]];
+
+    // if vertex is strongly connected to at least one of verticies in condensation 
+    // then it should also be in that condensation
+
+    for (let i = 1; i < reachabilityMatrix.length; ++i) {
+        let found = false;
+        for (let j = 0; j < condensated.length; ++j) {
+            for (let k = 0; k < condensated[j].length; ++k) {
+                if (reachabilityMatrix[i][k] && reachabilityMatrix[k][i]) {
+                    condensated[j].push(i);
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+        if (!found) condensated.push([i]);
+    }
+
+    const condensatedVert = [];
+    for (const c of condensated) condensatedVert.push(verticies[c[0]]);
+
+    const condensatedEdges = [];
+    // if vert1 in cond1 and vert2 in cond2 have edge then between cond1 and cond2 in condGraph 
+    // should be an edge
+    for (let i = 0; i < condensated.length; ++i) {
+        for (let j = 0; j < condensated.length; ++j) {
+            let found = false;
+            for (let m = 0; m < condensated[i].length; ++m) {
+                for (let n = 0; n < condensated[j].length; ++n) {
+                    const p = condensated[i][m];
+                    const s = condensated[j][n];
+
+                    if (matrix[p][s] === 1 && i !== j) {
+                        condensatedEdges.push({i, j});
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+            if (found) break;
+        }
+    }
+
+    const condensationGraph = () => graph(condensatedVert, condensatedEdges, directed);
 
     //calculating semipowers for verticies in graph
     for (let i = 0; i < verticies.length; ++i) {
@@ -60,6 +159,8 @@ window.graph = (verticies, edges, directed = true) => {
         const points = []; //points that arrow will consist of
 
         points.push(verticies[i]); 
+
+        angleMode(RADIANS);
         
         //if arrow doesn't point to itself search for a way to the end vertex
         if (i !== j) {
@@ -68,7 +169,7 @@ window.graph = (verticies, edges, directed = true) => {
             //get its index to increase offset before processing more
             let blockingIndex = verticies.indexOf(blockingVertex);
             if (blockingVertex) 
-                arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + inc | .01;
+                arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + parameters.distanceInc | .01;
 
             while (blockingVertex) {
                 //geometry stuff
@@ -76,15 +177,15 @@ window.graph = (verticies, edges, directed = true) => {
                 //given distance away from the blocking vertex
                 //and checks again if there are still verticies that block arrow
                 const dist = minDist + arrowVertex_offset[blockingIndex];
-                const point = p5.Vector.lerp(points[points.length - 1], verticies[j], fraction);
+                const point = p5.Vector.lerp(points[points.length - 1], verticies[j], parameters.fraction);
 
                 const c = p5.Vector.sub(point, points[points.length - 1]).normalize();
                 const b = p5.Vector.sub(blockingVertex, points[points.length - 1]);
                 const angle = Math.asin((c.y * b.x - c.x * b.y)/b.mag()); 
                 let angleSign = Math.sign(angle); if(!angleSign) angleSign = 1;
                 
-                const correctionAngle = angleSign * Math.asin( dist / b.mag()) - angle;
-
+                const correctionAngle = angleSign * Math.asin( min(dist / b.mag(), 1)) - angle;
+                
                 point.sub(points[points.length - 1])
                      .rotate(correctionAngle)
                      .add(points[points.length - 1]);
@@ -98,7 +199,7 @@ window.graph = (verticies, edges, directed = true) => {
                     //we change index and increase offset for new vertex
                     blockingIndex   = verticies.indexOf(blockingVertex);
 
-                    arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + inc | .01;
+                    arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + parameters.distanceInc | .01;
                 }
             }
             if (points.length < 2 && edges.find(({i, j}) => i === edge.j && j === edge.i)) {
@@ -146,7 +247,7 @@ window.graph = (verticies, edges, directed = true) => {
     const drawArrow = (arrow) => {
         lastIndex = arrow.length - 1;
 
-        strokeWeight(1);
+        strokeWeight(parameters.arrowThickness);
         for (let i = 0; i < lastIndex; ++i) {
             line(arrow[i].x, arrow[i].y,
                  arrow[i + 1].x, arrow[i + 1].y);
@@ -180,31 +281,35 @@ window.graph = (verticies, edges, directed = true) => {
 
             for (let i = 0; i < verticies.length; ++i) {
                 ellipse(verticies[i].x, verticies[i].y, diameter, diameter);
-                text(i, verticies[i].x, verticies[i].y);
-                const width = textWidth(i) + 2;
+
                 textSize(diameter/5); //a bit less than half smaller
+                let width = textWidth(i+1) + 2;
                 textAlign(LEFT, CENTER);
                 if (directed) {
-                    text(outDegrees[i], verticies[i].x + width/2, verticies[i].y - 5);
-                    text(inDegrees[i], verticies[i].x + width/2, verticies[i].y + 4);
-                } else 
-                    text(outDegrees[i] + inDegrees[i], verticies[i].x + width/2, verticies[i].y - 5);
-                textSize(diameter/3);
+                    width += max(textWidth(outDegrees[i]), textWidth(inDegrees[i]));
+                    text(outDegrees[i], verticies[i].x + width/4 + 2, verticies[i].y - 5);
+                    text(inDegrees[i], verticies[i].x + width/4 + 2, verticies[i].y + 4);
+                } else {
+                    width += textWidth(outDegrees[i] + inDegrees[i]);
+                    text(outDegrees[i] + inDegrees[i], verticies[i].x + width/4 + 2, verticies[i].y - 5);
+                }
+                    
                 textAlign(CENTER, CENTER);
+                textSize(diameter/3);
+                text(i+1, verticies[i].x - width/4 + 2, verticies[i].y);
             }
         },
+        drawCondensated() {
+            condensationGraph().draw();
+        },
         getMatrix() {
-            const matrix = [];
-
-            for (let n = 0; n < verticies.length; ++n) {
-                const row = [];
- 
-                for (let m = 0; m < verticies.length; ++m)
-                     row[m] = edges.find( ({i, j}) => i === n && j === m ) ? 1 : 0;
-
-                matrix.push(row);     
-            }
             return matrix;
+        },
+        getMatrix2() {
+            return mult(matrix, matrix);
+        },
+        getMatrix3() {
+            return mult(mult(matrix, matrix), matrix);
         },
         isRegular() {
             //checks if this graph is regular
