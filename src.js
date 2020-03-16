@@ -1,4 +1,4 @@
-var sensativity = 0.1;
+const sensativity = 0.1;
 
 var options = {
   showCondensationGraph: false,
@@ -24,12 +24,10 @@ function setup() {
   screenPos = createVector(0, 0);
 
   guiOptions = createGui('Options');
-  sliderRange(0, 1, 0.001);
-  guiOptions.addGlobals('sensativity');
   guiOptions.addObject(new Proxy(options, { set: (obj, prop, value) => {
     obj[prop] = value;
     if (options.studentBook.length === 4 && prop !== 'showCondensationGraph')
-      myGraph = generateGraph(options.studentBook, options.labNumber, options.directed); 
+      myGraph = generateGraph(options.studentBook, options.labNumber, options.directed);
   } }));
 
   guiParameters = createGui('Graph Parameters');
@@ -39,53 +37,55 @@ function setup() {
     arrowLength = diameter * parameters.arrowThickness / 6;
     minDist = diameter * parameters.minDist;
 
-    myGraph = generateGraph(options.studentBook, options.labNumber, options.directed); 
+    myGraph = generateGraph(options.studentBook, options.labNumber, options.directed);
   } }));
 
   guiParameters.setPosition(20, height + 200);
 
-  console.log(myGraph.getMatrix());
-  console.log(myGraph.getMatrix2());
-  console.log(myGraph.getMatrix3());
-  // if (myGraph.getPendant().length !== 0)
-  //   console.log("Pendant verticies: " + myGraph.getPendant());
-  // else 
-  //   console.log("Pendant verticies: none");
-  // if (myGraph.getIsolated() !== 0)
-  //   console.log("Isolated verticies: " + myGraph.getIsolated());
-  // else
-  //   console.log("Isolated verticies: none");
 
-  // if (myGraph.isRegular())
-  //   console.log("Graph is regular\nDegree" + myGraph.isRegular());
-  // else
-  //   console.log('Graph is irregular');  
-  
-  // if (options.directed) {
-  //   console.group('Indegrees');
-  //   console.table(myGraph.getInDegrees());
-  //   console.groupEnd();
-  //   console.group('Outdegrees');
-  //   console.table(myGraph.getOutDegrees());
-  //   console.groupEnd();
-  // }
-  // console.group('Degrees');
-  // console.table(myGraph.getDegrees());
-  // console.groupEnd();
+
+  console.log(myGraph.getPaths(2).map( item => item.toString().replace(/,/gi, ' -> ')));
+  console.log(myGraph.getPaths(3).map( item => item.toString().replace(/,/gi, ' -> ')));
+  console.log(myGraph.getMatrix());
+  console.log(myGraph.getCondensated());
+  if (myGraph.getPendant().length !== 0)
+    console.log("Pendant verticies: " + myGraph.getPendant());
+  else
+    console.log("Pendant verticies: none");
+  if (myGraph.getIsolated() !== 0)
+    console.log("Isolated verticies: " + myGraph.getIsolated());
+  else
+    console.log("Isolated verticies: none");
+
+  if (myGraph.isRegular())
+    console.log("Graph is regular\nDegree" + myGraph.isRegular());
+  else
+    console.log('Graph is irregular');
+
+  if (options.directed) {
+    console.group('Indegrees');
+    console.table(myGraph.getInDegrees());
+    console.groupEnd();
+    console.group('Outdegrees');
+    console.table(myGraph.getOutDegrees());
+    console.groupEnd();
+  }
+  console.group('Degrees');
+  console.table(myGraph.getDegrees());
+  console.groupEnd();
 
 
 
   resizeCanvas(windowWidth, windowHeight);
 
   textAlign(CENTER, CENTER);
-  strokeWeight(diameter/20);
 }
 
 function draw() {
   translate(windowWidth/2, windowHeight/2); //to scale relative to the center of window
-  scale(scaling);                           
+  scale(scaling);
 
-  translate(screenPos.x, screenPos.y);   
+  translate(screenPos.x, screenPos.y);
   background(110);
 
   if (options.showCondensationGraph)
@@ -109,19 +109,19 @@ function generateGraph(bookNumber, labNumber, directed) {
   let k;
 
   switch (labNumber) {
-    case 1: 
+    case 1:
       k = 1.0 - bookNumber.charAt(2) * 0.02 - bookNumber.charAt(3) * 0.005 - 0.25;
       break;
-    case 2:  
+    case 2:
       k = 1.0 - bookNumber.charAt(2) * 0.01 - bookNumber.charAt(3) * 0.01 - 0.3;
       break;
-    case 3:  
+    case 3:
       k = 1.0 - bookNumber.charAt(2) * 0.005 - bookNumber.charAt(3) *0.005 - 0.27;
       break;
-    case 4:  
+    case 4:
       k = 1.0 - bookNumber.charAt(2)* 0.01 - bookNumber.charAt(3) *0.005 - 0.15;
       break;
-    case 5:  
+    case 5:
     case 6:
       k = 1.0 - bookNumber.charAt(3) * 0.01 - bookNumber.charAt(4) *0.005 - 0.05;
       break;
@@ -147,7 +147,7 @@ function generateGraph(bookNumber, labNumber, directed) {
   for (let i = 0; i < verticiesN; ++i) {
     const row = [];
 
-    for (let j = 0; j < verticiesN; ++j) 
+    for (let j = 0; j < verticiesN; ++j)
       row.push(Math.min(matrix[i][j] + matrix[j][i], 1));
 
     symmetricMatrix.push(row);
@@ -166,23 +166,23 @@ function createGraph(verticiesN, figureType, matrix, directed) {
     for (let n = 0; n < verticiesN; ++n) {
       for (let m = 0; m < verticiesN; ++m)
         if (matrix[n][m] === 1)
-          edges.push({i: n, j: m});     
+          edges.push({i: n, j: m});
     }
   } else {
     for (let n = 0; n < verticiesN; ++n) {
       for (let m = 0; m < n + 1; ++m)
         if (matrix[n][m] === 1)
-          edges.push({i: n, j: m});     
+          edges.push({i: n, j: m});
     }
   }
 
-  let verticiesPerSide = 0; 
+  let verticiesPerSide = 0;
   let remainingVerticies = 0;
   let circleRadius = 0;
   const verticies = [];
 
   switch (figureType) {
-    case figureTypes.TRIANGLE : 
+    case figureTypes.TRIANGLE :
       remainingVerticies = verticiesN % 3;
       verticiesPerSide = (verticiesN - remainingVerticies) / 3;
 
@@ -192,7 +192,7 @@ function createGraph(verticiesN, figureType, matrix, directed) {
 
       for(let i = 0; i < 3; ++i) {
         const N = verticiesPerSide + (--remainingVerticies >= 0 ? 1 : 0);
-        for (let j = 1; j < N; ++j) 
+        for (let j = 1; j < N; ++j)
           verticies.push(p5.Vector.lerp(verticies[i % 3], verticies[(i + 1) % 3], j / N));
       }
 
@@ -200,7 +200,7 @@ function createGraph(verticiesN, figureType, matrix, directed) {
     case figureTypes.SQUARE_WITH_CENTER :
       verticiesN--;
       verticies.push(createVector(0, 0));
-    case figureTypes.SQUARE : 
+    case figureTypes.SQUARE :
       remainingVerticies = verticiesN % 4;
       verticiesPerSide = (verticiesN - remainingVerticies) / 4;
 
@@ -211,22 +211,22 @@ function createGraph(verticiesN, figureType, matrix, directed) {
 
       for(let i = 0; i < 4; ++i) {
         const N = verticiesPerSide + (--remainingVerticies >= 0 ? 1 : 0);
-        for (let j = 1; j < N; ++j) 
-          verticies.unshift(p5.Vector.lerp(verticies[i % 4], verticies[(i + 1) % 4], j / N));
+        for (let j = 1; j < N; ++j)
+          verticies.unshift(p5.Vector.lerp(verticies[verticies.length - 1 - i % 4],
+            verticies[verticies.length - 1 - (i + 1) % 4], j / N));
       }
 
      break;
     case figureTypes.CIRCLE_WITH_CENTER :
       verticiesN--;
       verticies.push(createVector(0, 0));
-    case figureTypes.CIRCLE : 
-      circleRadius = 0;
+    case figureTypes.CIRCLE :
+      const angle = Math.PI / verticiesN;
+      circleRadius = 1.5 * diameter / Math.tan(angle);
 
-      //TODO: evaluate suitable radius
-      
-      for (let i = 0; i < verticiesN; ++i) 
-        vertex = createVector(circleRadius, 0).rotate(Math.PI * 2 * i / verticiesN);
-    
+      for (let i = 0; i < verticiesN; ++i)
+        verticies.unshift(createVector(circleRadius, 0).rotate(2 * i * angle));
+
       break;
   }
 
