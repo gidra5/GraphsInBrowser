@@ -168,8 +168,6 @@ window.graph = (verticies, edges, directed) => {
 
         points.push(verticies[i]);
 
-        angleMode(RADIANS);
-
         //if arrow doesn't point to itself search for a way to the end vertex
         if (i !== j) {
             //check whether there is a vertex on the way
@@ -373,9 +371,9 @@ window.graph = (verticies, edges, directed) => {
             // }
 
             // my way
-            if (length <= 1) {
+            if (length <= 1)
                 edges.forEach(({ i, j }) => directed ? paths.push([i, j]) : paths.push([i, j], [j, i]));
-            } else {
+            else {
                 pathsPrev = this.getPaths(length - 1);
                 pathsPrev.forEach(path => {
                     edges.filter(edge => edge.i === path[length - 1])
@@ -386,6 +384,12 @@ window.graph = (verticies, edges, directed) => {
         },
         getMatrix() {
             return matrix;
+        },
+        getReachabilityMatrix() {
+            return reachabilityMatrix;
+        },
+        getConnectivityMatrix() {
+            return reachabilityMatrix.map((item, i1) => item.map((item, i2) => reachabilityMatrix[i1][i2] * reachabilityMatrix[i2][i1]));
         },
         isRegular() {
             //checks if this graph is regular

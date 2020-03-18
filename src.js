@@ -28,6 +28,54 @@ function setup() {
     obj[prop] = value;
     if (options.studentBook.length === 4 && prop !== 'showCondensationGraph')
       myGraph = generateGraph(options.studentBook, options.labNumber, options.directed);
+
+    console.clear();
+    switch (options.labNumber) {
+      case 4:
+        //console.log(myGraph.get());
+        console.log(myGraph.getMatrix());
+        break;
+      case 5:
+
+      case 6:
+      case 3:
+        console.log(myGraph.getPaths(2).map(item => item.toString().replace(/,/gi, ' -> ')));
+        console.log(myGraph.getPaths(3).map(item => item.toString().replace(/,/gi, ' -> ')));
+
+        console.log(myGraph.getCondensated());
+        console.log(myGraph.getReachabilityMatrix());
+        console.log(myGraph.getConnectivityMatrix());
+      case 2:
+        if (options.directed) {
+          console.group('Indegrees');
+          console.table(myGraph.getInDegrees());
+          console.groupEnd();
+          console.group('Outdegrees');
+          console.table(myGraph.getOutDegrees());
+          console.groupEnd();
+        }
+        console.group('Degrees');
+        console.table(myGraph.getDegrees());
+        console.groupEnd();
+
+        if (myGraph.getPendant().length !== 0)
+          console.log("Pendant verticies: " + myGraph.getPendant());
+        else
+          console.log("Pendant verticies: none");
+
+        if (myGraph.getIsolated() !== 0)
+          console.log("Isolated verticies: " + myGraph.getIsolated());
+        else
+          console.log("Isolated verticies: none");
+
+        if (myGraph.isRegular())
+          console.log("Graph is regular\nDegree" + myGraph.isRegular());
+        else
+          console.log('Graph is irregular');
+      case 1:
+        console.log(myGraph.getMatrix());
+        break;
+    }
   } }));
 
   guiParameters = createGui('Graph Parameters');
@@ -40,41 +88,7 @@ function setup() {
     myGraph = generateGraph(options.studentBook, options.labNumber, options.directed);
   } }));
 
-  guiParameters.setPosition(20, height + 200);
-
-
-
-  console.log(myGraph.getPaths(2).map( item => item.toString().replace(/,/gi, ' -> ')));
-  console.log(myGraph.getPaths(3).map( item => item.toString().replace(/,/gi, ' -> ')));
-  console.log(myGraph.getMatrix());
-  console.log(myGraph.getCondensated());
-  if (myGraph.getPendant().length !== 0)
-    console.log("Pendant verticies: " + myGraph.getPendant());
-  else
-    console.log("Pendant verticies: none");
-  if (myGraph.getIsolated() !== 0)
-    console.log("Isolated verticies: " + myGraph.getIsolated());
-  else
-    console.log("Isolated verticies: none");
-
-  if (myGraph.isRegular())
-    console.log("Graph is regular\nDegree" + myGraph.isRegular());
-  else
-    console.log('Graph is irregular');
-
-  if (options.directed) {
-    console.group('Indegrees');
-    console.table(myGraph.getInDegrees());
-    console.groupEnd();
-    console.group('Outdegrees');
-    console.table(myGraph.getOutDegrees());
-    console.groupEnd();
-  }
-  console.group('Degrees');
-  console.table(myGraph.getDegrees());
-  console.groupEnd();
-
-
+  guiParameters.setPosition(20, height + 180);
 
   resizeCanvas(windowWidth, windowHeight);
 
