@@ -66,12 +66,29 @@ window.graph = (verticies, edges, directed) => {
                             .map((value, index1) => value
                             .map((value, index2) => min(value + (index1 === index2 ? 1 : 0), 1)));
 
-    const condensated = [[0]];
+	let connectivityMatrix = reachabilityMatrix.map((item, i1) => item.map((item, i2) => reachabilityMatrix[i1][i2] * reachabilityMatrix[i2][i1]));
+
+	//since we could reorder indexes in such a way that there blocks of 1s on diagonals
+	//only rows that are unique represent condensations
+	const condensated = [];
+	
+	for (let n = 0; n < connectivityMatrix.length; ++n) {
+		let row = connectivityMatrix[n];
+		let seen = false;
+		
+		for(let m = 0; m < row.length; ++m) {
+			seen = row[m] && condensated.flat().includes(m);
+			if(seen) break; 
+		}
+		if(seen) continue;
+		
+		condensated.push(row.map( (v, i) => v ? i + 1 : 0).filter( (v, i) => v !== 0).map( v => v - 1));
+    }
 
     // if vertex have paths from and to least one of verticies in condensation
     // then it should also be in that condensation
     // else if there is no such condensation it'll be in new condensation
-    for (let i = 1; i < reachabilityMatrix.length; ++i) {
+    /*for (let i = 1; i < reachabilityMatrix.length; ++i) {
         let found = false;
         for (let j = 0; j < condensated.length; ++j) {
             let foundIn = false;
@@ -89,7 +106,7 @@ window.graph = (verticies, edges, directed) => {
             if (foundIn && foundOut) break;
         }
         if (!found) condensated.push([i]);
-    }
+    }*/
 
     //setting up condensated graph
 
@@ -109,7 +126,7 @@ window.graph = (verticies, edges, directed) => {
                     const p = condensated[i][m];
                     const s = condensated[j][n];
 
-                    if (matrix[p][s] === 1 && i !== j) {
+                    if (reachabilityMatrix[p][s] === 1 && i !== j) {
                         condensatedEdges.push({i, j});
                         found = true;
                         break;
@@ -389,7 +406,7 @@ window.graph = (verticies, edges, directed) => {
             return reachabilityMatrix;
         },
         getConnectivityMatrix() {
-            return reachabilityMatrix.map((item, i1) => item.map((item, i2) => reachabilityMatrix[i1][i2] * reachabilityMatrix[i2][i1]));
+            return connectivityMatrix;
         },
         isRegular() {
             //checks if this graph is regular
