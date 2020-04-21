@@ -72,7 +72,7 @@
 
 
   p5.prototype.removeGui = function(gui) {
-    // TODO: implement this
+    guis.splice(guis.indexOf(gui), 1);
   };
 
   // update defaults used for creation of sliders

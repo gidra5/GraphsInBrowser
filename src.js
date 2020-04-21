@@ -1,8 +1,24 @@
 const sensativity = 0.1;
 
+const figureTypes = {
+  CIRCLE: 0,
+  SQUARE: 1,
+  TRIANGLE: 2,
+  CIRCLE_WITH_CENTER: 3,
+  SQUARE_WITH_CENTER: 4,
+};
+const TGForm = {
+  Original: 'Original',
+  Tree: 'Tree'
+}
+
 var options = {
-  showCondensationGraph: false,
   directed: true,
+  showCondensationGraph: false,
+  showTraversalGraph: true,
+  traversalStartVertex: '1',
+  traversalType: [graphTraversalTypes.DEPTH, graphTraversalTypes.BREADTH],
+  traversalGraphForm: [TGForm.Tree, TGForm.Original],
   studentBook: '9525',
   labNumber: [1, 2, 3, 4, 5, 6],
 };
@@ -10,85 +26,127 @@ var options = {
 let scaling = 1;
 let screenPos;
 let myGraph;
-let guiOptions, guiParameters;
-
-const figureTypes = {
-  CIRCLE: 'circle',
-  SQUARE: 'square',
-  TRIANGLE: 'triangle',
-  CIRCLE_WITH_CENTER: 'circle with center',
-  SQUARE_WITH_CENTER: 'square with center',
-};
+let myGraphTraversal;
+let traverseButton;
+let changeIndexingButton;
 
 function setup() {
   screenPos = createVector(0, 0);
 
-  guiOptions = createGui('Options');
-  guiOptions.addObject(new Proxy(options, { set: (obj, prop, value) => {
-    obj[prop] = value;
-    if (options.studentBook.length === 4 && prop !== 'showCondensationGraph')
-      myGraph = generateGraph(options.studentBook, options.labNumber, options.directed);
+  const guiOptions = createGui('Options');
+  guiOptions.addObject(new Proxy(options, {
+    set: (obj, prop, value) => {
+      obj[prop] = value;
+      if (options.studentBook.length === 4)
+        myGraph = generateGraph(options.studentBook, options.labNumber, options.directed);
 
-    console.clear();
-    switch (options.labNumber) {
-      case 4:
-        //console.log(myGraph.get());
-        console.log(myGraph.getMatrix());
-        break;
-      case 5:
+      if (['labNumber', 'studentBook', 'traversalStartVertex', 'traversalType', 'directed'].includes(prop)) {
+        console.clear();
 
-      case 6:
-      case 3:
-        console.log(myGraph.getPaths(2).map(item => item.toString().replace(/,/gi, ' -> ')));
-        console.log(myGraph.getPaths(3).map(item => item.toString().replace(/,/gi, ' -> ')));
+        switch (options.labNumber) {
+          case 4: {
+            console.log(myGraphTraversal.getTraversalTree().getMatrix());
+            console.log(myGraphTraversal.getIndiciesMappingMatrix());
+            console.log(myGraph.getMatrix());
+            break;
+          }
+          case 5: {
 
-        console.log(myGraph.getCondensated());
-        console.log(myGraph.getReachabilityMatrix());
-        console.log(myGraph.getConnectivityMatrix());
-      case 2:
-        if (options.directed) {
-          console.group('Indegrees');
-          console.table(myGraph.getInDegrees());
-          console.groupEnd();
-          console.group('Outdegrees');
-          console.table(myGraph.getOutDegrees());
-          console.groupEnd();
+          }
+          case 6: {
+
+          }
+          case 3: {
+            console.log(myGraph.getPaths(2).map(item => item.toString().replace(/,/gi, ' -> ')));
+            console.log(myGraph.getPaths(3).map(item => item.toString().replace(/,/gi, ' -> ')));
+
+            console.log(myGraph.getCondensated());
+            console.log(myGraph.getCondensatedMatrix());
+            console.log(myGraph.getReachabilityMatrix());
+            console.log(myGraph.getConnectivityMatrix());
+
+            if (options.directed) {
+              console.group('Indegrees');
+              console.table(myGraph.getInDegrees());
+              console.groupEnd();
+              console.group('Outdegrees');
+              console.table(myGraph.getOutDegrees());
+              console.groupEnd();
+            } else {
+              console.group('Degrees');
+              console.table(myGraph.getDegrees());
+              console.groupEnd();
+            }
+
+            console.log(myGraph.getMatrix());
+            console.log(myGraph.getMatrix(2));
+            console.log(myGraph.getMatrix(3));
+            break;
+          }
+          case 2: {
+            if (options.directed) {
+              console.group('Indegrees');
+              console.table(myGraph.getInDegrees());
+              console.groupEnd();
+              console.group('Outdegrees');
+              console.table(myGraph.getOutDegrees());
+              console.groupEnd();
+            }
+
+            console.group('Degrees');
+            console.table(myGraph.getDegrees());
+            console.groupEnd();
+
+            if (myGraph.getPendant().length !== 0)
+              console.log("Pendant verticies: " + myGraph.getPendant());
+            else
+              console.log("Pendant verticies: none");
+
+            if (myGraph.getIsolated() !== 0)
+              console.log("Isolated verticies: " + myGraph.getIsolated());
+            else
+              console.log("Isolated verticies: none");
+
+            if (myGraph.isRegular())
+              console.log("Graph is regular\nDegree" + myGraph.isRegular());
+            else
+              console.log('Graph is irregular');
+          }
+          case 1: {
+            console.log(myGraph.getMatrix());
+            break;
+          }
         }
-        console.group('Degrees');
-        console.table(myGraph.getDegrees());
-        console.groupEnd();
 
-        if (myGraph.getPendant().length !== 0)
-          console.log("Pendant verticies: " + myGraph.getPendant());
-        else
-          console.log("Pendant verticies: none");
+        if (myGraph.getTags().includes(options.traversalStartVertex))
+          myGraphTraversal = graphTraversal(myGraph, Number(options.traversalStartVertex) - 1, options.traversalType);
+      }
+  }}));
 
-        if (myGraph.getIsolated() !== 0)
-          console.log("Isolated verticies: " + myGraph.getIsolated());
-        else
-          console.log("Isolated verticies: none");
-
-        if (myGraph.isRegular())
-          console.log("Graph is regular\nDegree" + myGraph.isRegular());
-        else
-          console.log('Graph is irregular');
-      case 1:
-        console.log(myGraph.getMatrix());
-        break;
-    }
-  } }));
-
-  guiParameters = createGui('Graph Parameters');
-  guiParameters.addObject(new Proxy(parameters, { set: (obj, prop, value) => {
+  const guiParameters = createGui('Graph Parameters');
+  guiParameters.addObject(new Proxy(parameters, {
+    set: (obj, prop, value) => {
     obj[prop] = value;
 
     arrowLength = diameter * parameters.arrowThickness / 6;
     minDist = diameter * parameters.minDist;
 
     myGraph = generateGraph(options.studentBook, options.labNumber, options.directed);
-  } }));
+    }
+  }));
 
-  guiParameters.setPosition(20, height + 180);
+  traverseButton = createButton('Traverse');
+  traverseButton.mousePressed(() => myGraphTraversal.traverse() ? (console.log(myGraphTraversal.getIndiciesMappingMatrix()),
+            console.log(myGraphTraversal.getTraversalTree().getMatrix())) : 0);
+  traverseButton.position(30, Object.keys(guiOptions).length * 40 + 80);
+  traverseButton.size(180, 25);
+
+  changeIndexingButton = createButton('Change Indexing');
+  changeIndexingButton.mousePressed(() => myGraphTraversal.changeIndexing());
+  changeIndexingButton.position(30, (Object.keys(guiOptions).length + 1) * 40 + 80);
+  changeIndexingButton.size(180, 25);
+
+  guiParameters.setPosition(20, (Object.keys(guiOptions).length + 2) * 40 + 80);
 
   resizeCanvas(windowWidth, windowHeight);
 
@@ -103,9 +161,17 @@ function draw() {
   background(110);
 
   if (options.showCondensationGraph)
-    myGraph.drawCondensated();
-  else
-    myGraph.draw();
+    myGraph.drawCondensated(createVector(800, 0));
+  if (options.showTraversalGraph)
+    switch (options.traversalGraphForm) {
+      case TGForm.Tree:
+        myGraphTraversal.getTraversalTree().draw(createVector(0, 400));
+        break;
+      case TGForm.Original:
+        myGraphTraversal.getInOriginalForm().draw(createVector(0, 600));
+        break;
+    }
+  myGraph.draw();
 }
 
 function mouseWheel(event) {
@@ -119,7 +185,7 @@ function mouseDragged() {
 
 function generateGraph(bookNumber, labNumber, directed) {
   const verticiesN = 10 + Number(bookNumber.charAt(2));
-  let figureType;
+  const figureType = Math.floor(bookNumber.charAt(3)/2);
   let k;
 
   switch (labNumber) {
@@ -141,14 +207,6 @@ function generateGraph(bookNumber, labNumber, directed) {
       break;
   }
 
-  switch (Math.floor(bookNumber.charAt(3)/2)) {
-    case 0: figureType = figureTypes.CIRCLE; break;
-    case 1: figureType = figureTypes.SQUARE; break;
-    case 2: figureType = figureTypes.TRIANGLE; break;
-    case 3: figureType = figureTypes.CIRCLE_WITH_CENTER; break;
-    case 4: figureType = figureTypes.SQUARE_WITH_CENTER; break;
-  }
-
   randomSeed(Number(bookNumber));
 
   const matrix = Array.from({ length: verticiesN }, () =>
@@ -157,20 +215,14 @@ function generateGraph(bookNumber, labNumber, directed) {
     )
   );
 
-  const symmetricMatrix = [];
-  for (let i = 0; i < verticiesN; ++i) {
-    const row = [];
-
-    for (let j = 0; j < verticiesN; ++j)
-      row.push(Math.min(matrix[i][j] + matrix[j][i], 1));
-
-    symmetricMatrix.push(row);
+  if (!directed) {
+    for (let i = 0; i < verticiesN; ++i) {
+      for (let j = 0; j < verticiesN; ++j)
+        matrix[i][j] = Math.min(matrix[i][j] + matrix[j][i], 1);
+    }
   }
 
-  if (directed)
     return createGraph(verticiesN, figureType, matrix, directed);
-  else
-    return createGraph(verticiesN, figureType, symmetricMatrix, directed);
 }
 
 function createGraph(verticiesN, figureType, matrix, directed) {
@@ -244,5 +296,5 @@ function createGraph(verticiesN, figureType, matrix, directed) {
       break;
   }
 
-  return graph(verticies, edges, directed);
+  return graph(verticies.map((v, i) => ({ tag: `${i + 1}`, color: createVector(0), pos: v })), edges, directed);
 }
