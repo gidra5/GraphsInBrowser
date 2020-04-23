@@ -22,10 +22,13 @@ const arrowSharpness = Math.PI / 6; //angle at the arrow's head in RADIANS
 let arrowLength = diameter * parameters.arrowThickness / 6;
 let minDist = diameter * parameters.minDist;
 
-window.graph = (verticiesInfo, edges, directed) => {
+window.graph = (verticiesInfo, edgesInfo, directed) => {
     let tags = verticiesInfo.map(v => v.tag);
-    const colors = verticiesInfo.map(v => v.color);
+    let colors = verticiesInfo.map(v => v.color);
     const verticies = verticiesInfo.map(v => v.pos);
+    const edges = edgesInfo.map(v => v.e);
+    let eColors = edgesInfo.map(v => v.color);
+    const weights = edgesInfo.map(v => v.w);
     const inDegrees = [];
     const outDegrees = [];
 
@@ -262,7 +265,7 @@ window.graph = (verticiesInfo, edges, directed) => {
         }
 
         if (directed) {
-            //if graph is directed, then alse draw head for the arrow
+            //if graph is directed, then also draw head for the arrow
             const p1 = p5.Vector.sub(arrow[lastIndex - 1], arrow[lastIndex])
                                 .normalize()
                                 .mult(arrowLength)
@@ -284,9 +287,13 @@ window.graph = (verticiesInfo, edges, directed) => {
     return {
         draw(position = createVector(0, 0)) {
             strokeWeight(parameters.arrowThickness);
-            for (const arrow of arrows)
+            for (const arrow of arrows) {
+                const color = eColors[arrows.indexOf(arrow)];
+                stroke(color.x, color.y, color.z);
                 drawArrow(arrow, position);
+            }
 
+            stroke(0);
             strokeWeight(diameter/20);
             for (let i = 0; i < verticies.length; ++i) {
                 const vertPos = p5.Vector.add(verticies[i], position);
@@ -359,6 +366,18 @@ window.graph = (verticiesInfo, edges, directed) => {
         },
         setTags(t) {
             tags = t;
+        },
+        getVColors() {
+            return colors;
+        },
+        setVColors(c) {
+            colors = c;
+        },
+        getEColors() {
+            return eColors;
+        },
+        setEColors(c) {
+            eColors = c;
         },
         getPaths(length) {
             const paths = [];

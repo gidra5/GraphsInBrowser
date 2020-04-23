@@ -232,13 +232,13 @@ function createGraph(verticiesN, figureType, matrix, directed) {
     for (let n = 0; n < verticiesN; ++n) {
       for (let m = 0; m < verticiesN; ++m)
         if (matrix[n][m] === 1)
-          edges.push({i: n, j: m});
+          edges.push({ e: { i: n, j: m } , color : createVector(0) });
     }
   } else {
     for (let n = 0; n < verticiesN; ++n) {
       for (let m = 0; m < n + 1; ++m)
         if (matrix[n][m] === 1)
-          edges.push({i: n, j: m});
+          edges.push({ e: { i: n, j: m } , color : createVector(0) });
     }
   }
 

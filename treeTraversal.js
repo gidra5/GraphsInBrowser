@@ -26,9 +26,9 @@ window.graphTraversal = (graph, startingIndex, type) => {
                 tag: v.tag,
                 color: (v.tag === graph.getTags()[currentIndex] ? createVector(255, 120, 10) : createVector(0)),
                 pos: v.pos
-            })), edges, true);
+            })), edges.map( v => ({ e : v, color: createVector(0) })), true);
 
-        traversalTreeGraph = window.graph(input, edges, true);
+        traversalTreeGraph = window.graph(input, edges.map( v => ({ e : v, color: createVector(0) })), true);
     }
 
     //gives how many space is needed for all children below
@@ -182,6 +182,14 @@ window.graphTraversal = (graph, startingIndex, type) => {
                 }
             } else console.log('not done yet');
         },
-        traverse: stepForwardFunc,
+        traverse: () => {
+            stepForwardFunc();
+            graph.setVColors(graph.getVColors()
+                .map((v, i) => visited.includes(i) ?
+                    i === currentIndex ? createVector(255, 120, 10) : createVector(150, 75, 0) : v));
+            const e = edges.map(({ i, j }) => ({ i: visited[i], j: visited[j] }));
+            graph.setEColors(graph.getEdges()
+                .map((edge, i) => e.find(({ i, j }) => i === edge.i && j === edge.j) ? createVector(255, 120, 10) : graph.getEColors()[i]));
+        },
     }
 };
