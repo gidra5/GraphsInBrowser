@@ -22,13 +22,8 @@ const arrowSharpness = Math.PI / 6; //angle at the arrow's head in RADIANS
 let arrowLength = diameter * parameters.arrowThickness / 6;
 let minDist = diameter * parameters.minDist;
 
-window.graph = (verticiesInfo, edgesInfo, directed) => {
-    let tags = verticiesInfo.map(v => v.tag);
-    let colors = verticiesInfo.map(v => v.color);
-    const verticies = verticiesInfo.map(v => v.pos);
+window.graph = (verticiesInfo, edgesInfo, directed, weighted) => {
     const edges = edgesInfo.map(v => v.e);
-    let eColors = edgesInfo.map(v => v.color);
-    const weights = edgesInfo.map(v => v.w);
     const inDegrees = [];
     const outDegrees = [];
 
@@ -58,18 +53,18 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
     //Adjacency matrix of this graph
     const matrix = [];
 
-    for (let n = 0; n < verticies.length; ++n) {
+    for (let n = 0; n < verticiesInfo.length; ++n) {
         const row = [];
 
-        for (let m = 0; m < verticies.length; ++m)
-             row[m] = edges.find( ({i, j}) => (i === n && j === m) || (!directed && i === m && j === n) ) ? 1 : 0;
+        for (let m = 0; m < verticiesInfo.length; ++m)
+            row[m] = edges.find( ({i, j}) => (i === n && j === m) || (!directed && i === m && j === n) ) ? 1 : 0;
 
         matrix.push(row);
     }
 
-    let reachabilityMatrix = getIdentity(verticies.length);
+    let reachabilityMatrix = getIdentity(verticiesInfo.length);
 
-    for (let i = 0; i < verticies.length; ++i)
+    for (let i = 0; i < verticiesInfo.length; ++i)
         reachabilityMatrix = mult(reachabilityMatrix, matrix)
                             .map((value, index1) => value
                             .map((value, index2) => min(value + (index1 === index2 ? 1 : 0), 1)));
@@ -97,7 +92,7 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
 
     //verticies that represent verticies in condensated graph
     //are chosen by first vertex in condensation
-    const condensatedVert = condensated.map(value => verticies[value[0]]);
+    const condensatedVert = condensated.map(value => verticiesInfo[value[0]].pos);
 
     const condensatedEdges = [];
 
@@ -124,10 +119,10 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
     }
 
     //making lambda to avoid immediate recurrence
-    let condensationGraph = () => graph(condensatedVert.map((v, i) => ({tag: tags[i], color: colors[i], pos: v})), condensatedEdges, directed);
+    let condensationGraph = () => graph(condensatedVert.map((v, i) => ({tag: verticiesInfo[i].tag, color: verticiesInfo[i].color, pos: v})), condensatedEdges, directed);
 
     //calculating degrees for verticies in graph
-    for (let i = 0; i < verticies.length; ++i) {
+    for (let i = 0; i < verticiesInfo.length; ++i) {
         outDegrees[i] = edges.filter(item => item.i === i).length;
         inDegrees[i] = edges.filter(item => item.j === i).length;
     }
@@ -143,21 +138,21 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
         const {i, j} = edge;
         let closestVertex;
 
-        for (const vertex of verticies) {
-            if(vertex === verticies[i] || vertex === verticies[j])
+        for (const vertexInfo of verticiesInfo) {
+            if(vertexInfo === verticiesInfo[i] || vertexInfo === verticiesInfo[j])
                 continue;
 
-            const a = p5.Vector.sub(vertex, point2);
-            const b = p5.Vector.sub(vertex, point1);
+            const a = p5.Vector.sub(vertexInfo.pos, point2);
+            const b = p5.Vector.sub(vertexInfo.pos, point1);
             const c = p5.Vector.sub(point2, point1).normalize();
             const dist = (a.dot(c) > 0) ? a.mag() :
                          (b.dot(c) < 0) ? b.mag() :
                          abs(c.y * b.x - c.x * b.y);
             if (dist > minDist) continue;
 
-            if (!closestVertex) closestVertex = {vertex, dist: b.mag()};
+            if (!closestVertex) closestVertex = {vertex: vertexInfo, dist: b.mag()};
 
-            if (b.mag() < closestVertex.dist) closestVertex = {vertex, dist: b.mag()};
+            if (b.mag() < closestVertex.dist) closestVertex = {vertex: vertexInfo, dist: b.mag()};
         }
 
         if (closestVertex)
@@ -168,26 +163,26 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
         const {i, j} = edge;
         const points = []; //points that arrow will consist of
 
-        points.push(verticies[i]);
+        points.push(verticiesInfo[i].pos);
 
         //if arrow doesn't point to itself search for a way to the end vertex
         if (i !== j) {
             //check whether there is a vertex on the way
-            let blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, minDist);
+            let blockingVertex = isIntersecting(points[points.length - 1], verticiesInfo[j].pos, edge, minDist);
 
             //get its index to increase offset before processing more
-            let blockingIndex = verticies.indexOf(blockingVertex);
+            let blockingIndex = verticiesInfo.indexOf(blockingVertex);
 
             if (blockingVertex)
                 arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + parameters.distanceInc | .01;
             else if(edges.find(({i, j}) => i === edge.j && j === edge.i)) {
                 //if its straight line and we have arrow in the opposite direction
                 //then compute direction in which current arrow is facing
-                const vec = p5.Vector.sub(verticies[i], verticies[j]).normalize();
+                const vec = p5.Vector.sub(verticiesInfo[i].pos, verticiesInfo[j].pos).normalize();
 
                 //and move middle point of the resulting arrow some amount away
                 //perpendicular to the direction in which it points
-                points.push(p5.Vector.lerp(verticies[i], verticies[j], 0.5)
+                points.push(p5.Vector.lerp(verticiesInfo[i].pos, verticiesInfo[j].pos, 0.5)
                                      .add(createVector(vec.y, -vec.x).mult(diameter / 4)));
             }
 
@@ -198,10 +193,10 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
                 //given distance away from the blocking vertex
                 //and checks again if there are still verticies that block arrow
                 const dist = minDist + arrowVertex_offset[blockingIndex];
-                const point = p5.Vector.lerp(points[points.length - 1], verticies[j], parameters.fraction);
+                const point = p5.Vector.lerp(points[points.length - 1], verticiesInfo[j].pos, parameters.fraction);
 
                 const c = p5.Vector.sub(point, points[points.length - 1]).normalize();
-                const b = p5.Vector.sub(blockingVertex, points[points.length - 1]);
+                const b = p5.Vector.sub(blockingVertex.pos, points[points.length - 1]);
                 const angle = Math.asin((c.y * b.x - c.x * b.y)/b.mag());
                 let angleSign = Math.sign(angle); if(!angleSign) angleSign = 1;
 
@@ -214,11 +209,11 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
                 //geometry stuff ends
                 points.push(point);
 
-                blockingVertex = isIntersecting(points[points.length - 1], verticies[j], edge, dist);
+                blockingVertex = isIntersecting(points[points.length - 1], verticiesInfo[j].pos, edge, dist);
                 //if still have blocking vertex that is different from previous
-                if (blockingIndex !== verticies.indexOf(blockingVertex)) {
+                if (blockingIndex !== verticiesInfo.indexOf(blockingVertex)) {
                     //we change index and increase offset for new vertex
-                    blockingIndex   = verticies.indexOf(blockingVertex);
+                    blockingIndex   = verticiesInfo.indexOf(blockingVertex);
 
                     arrowVertex_offset[blockingIndex] = arrowVertex_offset[blockingIndex] + parameters.distanceInc | .01;
                 }
@@ -226,15 +221,15 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
             }
         } else {
             //if arrow is pointing to itself, then just generate two points to make a loop
-            const vec1 = verticies[i].copy().add(createVector(minDist, 0).rotate( Math.PI / 6));
-            const vec2 = verticies[i].copy().add(createVector(minDist, 0).rotate(-Math.PI / 6));
+            const vec1 = verticiesInfo[i].pos.copy().add(createVector(minDist, 0).rotate( Math.PI / 6));
+            const vec2 = verticiesInfo[i].pos.copy().add(createVector(minDist, 0).rotate(-Math.PI / 6));
 
             points.push(vec1);
             points.push(vec2);
         }
 
         //end of the arrow
-        points.push(verticies[j]);
+        points.push(verticiesInfo[j].pos);
 
         return points;
     };
@@ -260,8 +255,41 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
         lastIndex = arrow.length - 1;
 
         for (let i = 0; i < lastIndex; ++i) {
-            line(arrow[i].x + position.x, arrow[i].y + position.y,
-                 arrow[i + 1].x + position.x, arrow[i + 1].y + position.y);
+            const shifted1 = p5.Vector.add(arrow[i], position);
+            const shifted2 = p5.Vector.add(arrow[i + 1], position);
+            line(shifted1.x, shifted1.y, shifted2.x, shifted2.y);
+            if (weighted) {
+                if (!options.showAllWeights) {
+                    const mp = createVector((mouseX - windowWidth / 2) / scaling - screenPos.x,
+                        (mouseY - windowHeight / 2) / scaling - screenPos.y);
+                    const a = p5.Vector.sub(mp, shifted2);
+                    const b = p5.Vector.sub(mp, shifted1);
+                    const c = p5.Vector.sub(arrow[i + 1], arrow[i]).normalize();
+                    const dist = (a.dot(c) > 0) ? a.mag() :
+                            (b.dot(c) < 0) ? b.mag() :
+                            abs(c.y * b.x - c.x * b.y);
+                    if (dist < 5 / scaling) {
+                        push();
+                        textSize(20 / scaling);
+                        strokeWeight(3 / scaling);
+                        fill(255);
+                        text(edgesInfo[arrows.indexOf(arrow)].w, mp.x + 10 / scaling, mp.y - 10 / scaling);
+                        pop();
+                    }
+                } else if (i === Math.floor(lastIndex / 2)) {
+                    push();
+                    textSize(20 / scaling);
+                    strokeWeight(3 / scaling);
+                    fill(255);
+                    if (lastIndex % 2)
+                        text(edgesInfo[arrows.indexOf(arrow)].w,
+                            arrow[i + 1].x * 0.3 + arrow[i].x * 0.7,
+                            arrow[i + 1].y * 0.3 + arrow[i].y * 0.7);
+                    else
+                        text(edgesInfo[arrows.indexOf(arrow)].w, arrow[i].x, arrow[i].y);
+                    pop();
+                }
+            }
         }
 
         if (directed) {
@@ -288,21 +316,21 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
         draw(position = createVector(0, 0)) {
             strokeWeight(parameters.arrowThickness);
             for (const arrow of arrows) {
-                const color = eColors[arrows.indexOf(arrow)];
+                const color = edgesInfo[arrows.indexOf(arrow)].color;
                 stroke(color.x, color.y, color.z);
                 drawArrow(arrow, position);
             }
 
             stroke(0);
             strokeWeight(diameter/20);
-            for (let i = 0; i < verticies.length; ++i) {
-                const vertPos = p5.Vector.add(verticies[i], position);
-                stroke(colors[i].x, colors[i].y, colors[i].z);
+            for (let i = 0; i < verticiesInfo.length; ++i) {
+                const vertPos = p5.Vector.add(verticiesInfo[i].pos, position);
+                stroke(verticiesInfo[i].color.x, verticiesInfo[i].color.y, verticiesInfo[i].color.z);
                 ellipse(vertPos.x, vertPos.y, diameter, diameter);
                 stroke(0);
 
                 textSize(diameter/5); //a bit less than half smaller
-                let width = textWidth(tags[i]) + 2;
+                let width = textWidth(verticiesInfo[i].tag) + 2;
                 textAlign(LEFT, CENTER);
                 noStroke();
                 if (directed) {
@@ -316,7 +344,7 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
 
                 textAlign(CENTER, CENTER);
                 textSize(diameter / 3);
-                text(tags[i], vertPos.x - width/4 + 2, vertPos.y);
+                text(verticiesInfo[i].tag, vertPos.x - width/4 + 2, vertPos.y);
                 stroke(0);
             }
         },
@@ -349,35 +377,38 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
                 pop();
             }
         },
-        isDirected() {
+        get directed() {
             return directed;
         },
-        getVertInfo() {
+        get verticiesInfo() {
             return verticiesInfo;
         },
-        getVerticies() {
-            return verticies;
+        get edgesInfo() {
+            return edgesInfo;
+        },
+        get verticies() {
+            return verticiesInfo.map(v => v.pos);
         },
         getEdges() {
             return edges;
         },
-        getTags() {
-            return tags;
+        get tags() {
+            return verticiesInfo.map(v => v.tag);
         },
-        setTags(t) {
-            tags = t;
+        set tags(t) {
+            verticiesInfo.forEach((v, i) => v.tag = t[i]);
         },
         getVColors() {
-            return colors;
+            return verticiesInfo.map(v => v.color);
         },
         setVColors(c) {
-            colors = c;
+            verticiesInfo.forEach((v, i) => v.color = c[i]);
         },
         getEColors() {
-            return eColors;
+            return edgesInfo.map(v => v.color);
         },
         setEColors(c) {
-            eColors = c;
+            edgesInfo.forEach((v, i) => v.color = c[i]);
         },
         getPaths(length) {
             const paths = [];
@@ -423,14 +454,14 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
             //and returns its degree
             let degree = outDegrees[0] + inDegrees[0];
 
-            for (let i = 1; i < verticies.length; ++i)
+            for (let i = 1; i < verticiesInfo.length; ++i)
                 if (degree !== outDegrees[i] + inDegrees[i]) return 0;
         },
         getPendant() {
             //returns array with indexes of pendant verticies
             const pendant = [];
 
-            for (let i = 0; i < verticies.length; ++i)
+            for (let i = 0; i < verticiesInfo.length; ++i)
                 if (outDegrees[i] + inDegrees[i] === 1) pendant.push(i);
 
             return pendant;
@@ -439,7 +470,7 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
             //returns array with indexes of isolated verticies
             const isolated = [];
 
-            for (let i = 0; i < verticies.length; ++i)
+            for (let i = 0; i < verticiesInfo.length; ++i)
                 if (outDegrees[i] + inDegrees[i] === 0) isolated.push(i);
 
             return isolated;
@@ -451,7 +482,7 @@ window.graph = (verticiesInfo, edgesInfo, directed) => {
             return outDegrees;
         },
         getDegrees() {
-            return Array.from({ length: verticies.length }, (v, i) => inDegrees[i] + outDegrees[i]);
+            return Array.from({ length: verticiesInfo.length }, (v, i) => inDegrees[i] + outDegrees[i]);
         }
     };
 };
