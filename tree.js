@@ -30,7 +30,7 @@ var tree = (directed, weighted) => {
                     pos: v.pos
                 }));
 
-            tree = window.graph(input, weighted ? edges.map(v => ({ e: v.e, color: createVector(0), w: v.w })) : edges.map(v => ({ e: v, color: createVector(0) })), directed);
+            tree = window.graph(input, weighted ? edges.map(v => ({ e: v.e, color: createVector(0), w: v.w })) : edges.map(v => ({ e: v, color: createVector(0) })), directed, weighted);
         },
         //places verticies of treversal tree in a correct tree shape starting from parent
         restructureTree(parentIndex = 0, width = getWidth(parentIndex)) {

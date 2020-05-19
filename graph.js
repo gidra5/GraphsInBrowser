@@ -283,10 +283,10 @@ window.graph = (verticiesInfo, edgesInfo, directed, weighted) => {
                     fill(255);
                     if (lastIndex % 2)
                         text(edgesInfo[arrows.indexOf(arrow)].w,
-                            arrow[i + 1].x * 0.3 + arrow[i].x * 0.7,
-                            arrow[i + 1].y * 0.3 + arrow[i].y * 0.7);
+                            shifted2.x * 0.3 + shifted1.x * 0.7,
+                            shifted2.y * 0.3 + shifted1.y * 0.7);
                     else
-                        text(edgesInfo[arrows.indexOf(arrow)].w, arrow[i].x, arrow[i].y);
+                        text(edgesInfo[arrows.indexOf(arrow)].w, shifted1.x, shifted1.y);
                     pop();
                 }
             }

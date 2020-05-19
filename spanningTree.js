@@ -28,7 +28,7 @@ var spanningTree = (graph, startingIndex, type) => {
 
                     const p = adjacent.reduce((acc, v) => acc.w > v.w ? v : acc, adjacent[0]);
 
-                    spanningTreeGraph.addVertex(spanningTreeGraph.verticies.findIndex(v => v.tag === graph.tags[p.e.i]), graph.tags[p.e.j], p.w);
+                    spanningTreeGraph.addVertex(spanningTreeGraph.verticies.findIndex(v => v.tag === graph.tags[p.e.i]), graph.tags[p.e.j], undefined, undefined, p.w);
                     visited.push(p.e.j);
                     spanningTreeGraph.restructureTree();
                     console.log('kek');

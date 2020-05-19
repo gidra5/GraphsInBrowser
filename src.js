@@ -15,7 +15,7 @@ const TGForm = {
 var options = {
   directed: false,
   weighted: true,
-  showAllWeights: true,
+  showAllWeights: false,
   showCondensationGraph: false,
   showTraversalGraph: false,
   showSpanningTree: true,
@@ -31,6 +31,7 @@ let screenPos;
 let myGraph;
 let myGraphTraversal;
 let mySpanningTree;
+let shortestPaths;
 let traverseButton;
 let changeIndexingButton;
 
@@ -58,8 +59,6 @@ function setup() {
 
         switch (options.labNumber) {
           case 4: {
-            // console.log(myGraphTraversal.traversalTree.tree.getMatrix());
-            // console.log(myGraphTraversal.indiciesMappingMatrix);
             console.log(myGraph.getMatrix());
             break;
           }
@@ -68,7 +67,8 @@ function setup() {
             break;
           }
           case 6: {
-
+            console.log(myGraph.getMatrix());
+            break;
           }
           case 3: {
             console.log(myGraph.getPaths(2).map(item => item.toString().replace(/,/gi, ' -> ')));
@@ -132,9 +132,13 @@ function setup() {
           }
         }
         traverseButton.mousePressed(() => {
-          mySpanningTree.traverse()   ?  console.log(mySpanningTree.spanningTree.tree.getMatrix()) : 0;
-          // myGraphTraversal.traverse() ? (console.log(myGraphTraversal.indiciesMappingMatrix),
-          //                                console.log(myGraphTraversal.traversalTree.tree.getMatrix())) : 0;
+          if (options.labNumber === 5)
+            mySpanningTree.traverse() ? console.log(mySpanningTree.spanningTree.tree.getMatrix()) : 0;
+          if(options.labNumber === 4)
+            myGraphTraversal.traverse() ? (console.log(myGraphTraversal.indiciesMappingMatrix),
+              console.log(myGraphTraversal.traversalTree.tree.getMatrix())) : 0;
+          if(options.labNumber === 6)
+            shortestPaths.traverse() ? (console.table(shortestPaths.paths.map(item => item.toString().replace(/,/gi, ' -> '))), console.log(shortestPaths.marking)) : 0;
         })
 
         if (myGraph.tags.includes(options.startingIndex))
@@ -143,6 +147,7 @@ function setup() {
         const spanningTreeAlgorithm = options.studentBook.charAt(3) % 2 ?
           spanningTreeTypes.PRIM : spanningTreeTypes.KRUSKAL;
         mySpanningTree = spanningTree(myGraph, Number(options.startingIndex) - 1, spanningTreeAlgorithm);
+        shortestPaths = dijkstra(myGraph, Number(options.startingIndex) - 1);
       }
   }}));
 
@@ -186,6 +191,9 @@ function draw() {
   if (options.showSpanningTree)
     mySpanningTree.spanningTree.tree.draw(createVector(400, 400));
   myGraph.draw();
+  if (options.labNumber === 6) {
+    shortestPaths.draw();
+  }
 }
 
 function mouseWheel(event) {
@@ -236,33 +244,23 @@ function generateGraph(bookNumber, labNumber, directed, weighted) {
     }
   }
 
-  let Wt;
+  const W = [];
   if (weighted) {
     const bool2s = x => x !== 0 ? 1 : 0;
     //round(rand(n,n)*100 .* A);
-    Wt = //matrix.map(row => row.map(v => random() * 100 * v));
-      Array.from({ length: verticiesN }, (v1, k1) =>
-      Array.from({ length: verticiesN }, (v2, k2) =>
-        Math.round( random() * 100 * matrix[k1][k2])
-      )
-    );
     //B = Wt & ones(n,n);
-    const B = Wt.map(row => row.map(v => v & 1));
-    //   Array.from({ length: verticiesN }, (v1, k1) =>
-    //   Array.from({ length: verticiesN }, (v2, k2) => Wt[k1][k2] & 1)
-    // );
     // Wt = (bool2s(B & ~B') + bool2s(B & B') .* tril(ones(n,n),-1)) .* Wt;
-    Wt = Wt.map((row, i) => row.map((v, j) =>
-      (bool2s(B[i][j] & ~B[j][i]) + (i < j - 1 ? bool2s(B[i][j] & B[j][i]) : 0)) * v));
+    const Wt = matrix.map((row, i) => row.map((v, j) =>
+      (bool2s(matrix[i][j] && !matrix[j][i]) + (i < j - 1 ? bool2s(matrix[i][j] && matrix[j][i]) : 0)) * Math.round(random() * 100 * v)));
     //W = Wt + Wt';
     for (let i = 0; i < verticiesN; ++i) {
+      W.push([]);
       for (let j = 0; j < verticiesN; ++j)
-        Wt[i][j] = Wt[i][j] + Wt[j][i];
+        W[i][j] = Wt[i][j] + Wt[j][i];
     }
   }
 
-  console.log(Wt);
-  return createGraph(verticiesN, figureType, matrix, directed, Wt);
+  return createGraph(verticiesN, figureType, matrix, directed, W);
 }
 
 function createGraph(verticiesN, figureType, matrix, directed, weights) {
