@@ -21,20 +21,24 @@ var dijkstra = (graph, startingIndex) => {
                 .filter(v => !permanent.includes(v.j));
 
             adjacentVerticies.forEach(v => {
+				console.log(marking[currIndex], marking[v.j], v);
                 if (marking[v.j] === undefined) {
                     P[v.j] = currIndex;
-                    marking[v.j] = v.w;
+                    marking[v.j] = marking[currIndex] + v.w;
                 }
                 else if (marking[v.j] > marking[currIndex] + v.w) {
                     marking[v.j] = marking[currIndex] + v.w;
                     P[v.j] = currIndex;
                 }
+				console.log(marking[currIndex], marking[v.j], v);
             });
 
             graph.verticiesInfo[currIndex].color = createVector(20, 20, 200);
             currIndex = marking.indexOf(marking.filter((v, i) => !permanent.includes(i)).reduce((acc, v, i) => (acc && v) ? min(acc, v) : v));
             permanent.push(currIndex);
             graph.verticiesInfo[currIndex].color = createVector(200, 200, 20);
+			console.log(P);
+			console.log(marking);
         },
         draw() {
             push();
