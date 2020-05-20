@@ -56,8 +56,8 @@ window.graph = (verticiesInfo, edgesInfo, directed, weighted) => {
     for (let n = 0; n < verticiesInfo.length; ++n) {
         const row = [];
 
-        for (let m = 0; m < verticiesInfo.length; ++m)
-            row[m] = edges.find( ({i, j}) => (i === n && j === m) || (!directed && i === m && j === n) ) ? 1 : 0;
+        for (let m = 0; m < verticiesInfo.length; ++m) 
+            row[m] = edgesInfo.find( ({ e }) => (e.i === n && e.j === m) || (!directed && e.i === m && e.j === n) ) ? 1 : 0;
 
         matrix.push(row);
     }
@@ -119,7 +119,7 @@ window.graph = (verticiesInfo, edgesInfo, directed, weighted) => {
     }
 
     //making lambda to avoid immediate recurrence
-    let condensationGraph = () => graph(condensatedVert.map((v, i) => ({tag: verticiesInfo[i].tag, color: verticiesInfo[i].color, pos: v})), condensatedEdges, directed);
+    let condensationGraph = () => graph(condensatedVert.map((v, i) => ({tag: verticiesInfo[i].tag, color: verticiesInfo[i].color, pos: v})), condensatedEdges.map(v => ({ e: v })), directed);
 
     //calculating degrees for verticies in graph
     for (let i = 0; i < verticiesInfo.length; ++i) {
@@ -317,7 +317,9 @@ window.graph = (verticiesInfo, edgesInfo, directed, weighted) => {
             strokeWeight(parameters.arrowThickness);
             for (const arrow of arrows) {
                 const color = edgesInfo[arrows.indexOf(arrow)].color;
-                stroke(color.x, color.y, color.z);
+				if(color !== undefined)
+					stroke(color.x, color.y, color.z);
+				else stroke(0);
                 drawArrow(arrow, position);
             }
 
